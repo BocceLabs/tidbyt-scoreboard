@@ -6,7 +6,7 @@ import json
 app = Flask(__name__)
 
 def score_list(a, b, poss):
-    return [str(a).zfill(2), str(b).zfill(2), int(poss), 0, 0]
+    return [str(a).zfill(2), str(b).zfill(2), int(poss)]
 
 scores = {
     "A": {
@@ -46,13 +46,13 @@ def score(court):
     return json.dumps(scores)
 
 
-@app.route("/setscore/<court>/<score>")
+@app.route("/setscore/<court>/<score>", methods=["GET", "POST"])
 def setscore(court, score):
     s = score.split(",")
     scores[court]["score"] = score_list(s[0], s[1], s[2])
     return "success"
 
-@app.route("/resettime/<court>")
+@app.route("/resettime/<court>", methods=["GET", "POST"])
 def gettime(court):
     scores[court]["time"] = [2, 0]
     return "success"
