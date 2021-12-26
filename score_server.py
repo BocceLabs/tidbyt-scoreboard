@@ -58,7 +58,7 @@ def lucky_score(court):
 
     # team colors
     team_a_color = (255, 0, 0)
-    team_b_color = (0, 0, 255)
+    team_b_color = (0, 135, 62)
 
     # team box backgrounds
     size = (32, 22)

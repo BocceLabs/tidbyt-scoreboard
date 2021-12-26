@@ -64,7 +64,7 @@ def main(config):
                             offset_start=5,
                             offset_end=32,
                             child=render.Text(
-                                content="Daddy's vs. Rats | 17:42",
+                                content="Merry Christmas bocce family! - Oddball Sports",
                                 font="CG-pixel-3x5-mono"
                             )
                         )
