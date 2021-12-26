@@ -2,6 +2,10 @@
 from flask import Flask
 from markupsafe import escape
 import json
+from PIL import Image, ImageDraw
+import os
+import base64
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -45,6 +49,43 @@ def score(court):
     scores[court]["time"] = [str(MM).zfill(2), str(SS).zfill(2)]
     return json.dumps(scores)
 
+@app.route("/lucky_score/<court>")
+def lucky_score(court):
+    mode = 'RGBA'
+    size = (64, 22)
+    color = (00, 00, 00)
+    image = Image.new(mode, size, color)
+
+    # team colors
+    team_a_color = (255, 0, 0)
+    team_b_color = (0, 0, 255)
+
+    # team box backgrounds
+    size = (32, 22)
+    team_a_background = Image.new(mode, size, team_a_color)
+    team_b_background = Image.new(mode, size, team_b_color)
+
+    # place the rectangles on the background
+    image.paste(team_a_background, (0, 0))
+    image.paste(team_b_background, (32, 0))
+
+    # extract the score
+    score_team_a = scores[court]["score"][0]
+    score_team_b = scores[court]["score"][1]
+
+    # concatenate the scores
+    scores_str = score_team_a + score_team_b
+
+    for i in range(4):
+        foreground = Image.open(os.path.join("luckiest_digits", scores_str[i] + ".png"))
+        image.paste(foreground, (i * 16, 0), foreground)
+
+
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    image_str = base64.b64encode(buffered.getvalue())
+
+    return json.dumps({"0": image_str.decode("utf-8")})
 
 @app.route("/setscore/<court>/<score>", methods=["GET", "POST"])
 def setscore(court, score):
