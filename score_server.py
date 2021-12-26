@@ -1,12 +1,28 @@
 # imports
 from flask import Flask
+from flask import request
 from markupsafe import escape
 import json
 from PIL import Image, ImageDraw
 import os
 import base64
 from io import BytesIO
+from google.cloud import datastore
+from google.oauth2 import service_account
+from google.cloud import language
+from datetime import datetime
+import isodate
 
+
+# Google Cloud Credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
+# credentials = service_account.Credentials.from_service_account_file(os.path.join(".", "oddballsportstvdev-e010e1ec7ca7.json"))
+# client = language.LanguageServiceClient(credentials=credentials)
+client = datastore.Client(
+    project="oddballsportstvdev"
+)
+
+# Flask App
 app = Flask(__name__)
 
 def score_list(a, b, poss):
@@ -19,6 +35,166 @@ scores = {
     }
 
 }
+
+@app.route("/venue/list", methods=["GET"])
+def venue_list():
+    query = client.query(kind="venue")
+    results = query.fetch()
+    results = [r["name"] for r in results]
+    return str(results)
+
+@app.route("/venue/add", methods=["POST"])
+def venue_add():
+    """
+    JSON Data expected:
+    {
+        "venue": {
+            "name": "Tuman's Tap Room",
+            "city": "Chicago"
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        venue_key = client.key("venue", data["venue"]["name"])
+        court_key = client.key("court", parent=venue_key)
+        entity = datastore.Entity(venue_key)
+        entity.update({
+            "name": data["venue"]["name"],
+            "city": data["venue"]["city"]
+        })
+        client.put(entity)
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+@app.route("/court/list", methods=["GET"])
+def court_list():
+    query = client.query(kind="court")
+    results = query.fetch()
+    results = [r.key.parent.id_or_name + " - " + r["name"] for r in results]
+    return str(results)
+
+@app.route("/court/add", methods=["POST"])
+def court_add():
+    """
+    JSON Data expected:
+    {
+        "venue": {
+            "name": "Cleo's",
+            "court": {
+                "name": "Left",
+                "dimensions": "30x8"
+            }
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        parent_key = client.key("venue", data["venue"]["name"])
+        key = client.key("court", data["venue"]["court"]["name"], parent=parent_key)
+        entity = datastore.Entity(key)
+        entity.update({
+            "name": data["venue"]["court"]["name"],
+            "dimensions": data["venue"]["court"]["dimensions"],
+        })
+        client.put(entity)
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+@app.route("/pixlet/list", methods=["GET"])
+def pixlet_list():
+    query = client.query(kind="pixlet")
+    results = query.fetch()
+    results = [r["name"] for r in results]
+    return str(results)
+
+@app.route("/pixlet/add", methods=["POST"])
+def pixlet_add():
+    """
+    JSON Data expected:
+    {
+        "pixlet": {
+            "name": "abc-0000",
+            "device_id": "insert-device-id",
+            "api_key": "insert-api-key"
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        key = client.key("pixlet")
+        entity = datastore.Entity(key)
+        entity.update({
+            "name": data["pixlet"]["name"],
+            "device_id": data["pixlet"]["device_id"],
+            "api_key": data["pixlet"]["api_key"]
+        })
+        client.put(entity)
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+@app.route("/game/add", methods=["POST"])
+def game_add():
+    """
+    JSON Data expected:
+    {
+        "game": {
+            "team_a": "Daddy's",
+            "team_b": "Rats",
+            "venue": "Cleo's", | optional
+            "court": "Fence", | optional
+            "datetime": isodate.isodatetime.datetime_isoformat(datetime.now()), | optional
+            "team_a_ball_color_pattern": "yellow", | optional
+            "team_b_ball_color_pattern": "pink" | optional
+        }
+
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if "venue" not in data["game"]:
+            data["game"]["venue"] = "unassigned"
+        if "court" not in data["game"]:
+            data["game"]["court"] = "unassigned"
+        if "datetime" not in data["game"]:
+            data["game"]["datetime"] = isodate.isodatetime.datetime_isoformat(datetime.now())
+        if "team_a_ball_color_pattern" not in data["game"]:
+            data["game"]["team_a_ball_color_pattern"] = "red"
+        if "team_b_ball_color_pattern" not in data["game"]:
+            data["game"]["team_b_ball_color_pattern"] = "blue"
+
+
+        key = client.key("game")
+        entity = datastore.Entity(key)
+        entity.update({
+            "team_a": data["game"]["team_a"],
+            "team_b": data["game"]["team_b"],
+            "venue": data["game"]["venue"],
+            "court": data["game"]["court"],
+            "datetime": data["game"]["datetime"],
+            "team_a_ball_color_pattern": data["game"]["team_a_ball_color_pattern"],
+            "team_b_ball_color_pattern": data["game"]["team_b_ball_color_pattern"]
+        })
+        client.put(entity)
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+
+
+
+
+##### Everything below here is old junk
+
+
 
 @app.route("/score/<court>")
 def score(court):

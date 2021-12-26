@@ -1,0 +1,6 @@
+google-cloud-language
+google-cloud-datastore
+opencv-contrib-python
+Flask
+pillow
+isodate
