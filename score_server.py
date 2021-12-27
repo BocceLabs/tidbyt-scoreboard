@@ -1,8 +1,8 @@
 # imports
 from flask import Flask
 from flask import request
+from flask import json
 from markupsafe import escape
-import json
 from PIL import Image, ImageDraw
 import os
 import base64
@@ -40,8 +40,7 @@ scores = {
 def venue_list():
     query = client.query(kind="venue")
     results = query.fetch()
-    results = [r["name"] for r in results]
-    return str(results)
+    return json.dumps(list(results))
 
 @app.route("/venue/add", methods=["POST"])
 def venue_add():
@@ -71,10 +70,27 @@ def venue_add():
 
 @app.route("/court/list", methods=["GET"])
 def court_list():
-    query = client.query(kind="court")
+    # query for venues
+    venue_query = client.query(kind="venue")
+    venue_results = venue_query.fetch()
+    venue_ids = [r.key.id_or_name for r in venue_results]
+
+    # query for courts asscoiated with venues and build dictionary
+    results = {}
+    for venue_id in venue_ids:
+        query = client.query(kind="court", ancestor=client.key("venue", venue_id))
+        court_results = query.fetch()
+        results[venue_id] = []
+        for court in court_results:
+            results[venue_id].append(court)
+
+    return json.dumps(results)
+
+@app.route("/court/list/<venue>", methods=["GET"])
+def court_list_per_venue(venue):
+    query = client.query(kind="court", ancestor=client.key("venue", venue))
     results = query.fetch()
-    results = [r.key.parent.id_or_name + " - " + r["name"] for r in results]
-    return str(results)
+    return json.dumps(list(results))
 
 @app.route("/court/add", methods=["POST"])
 def court_add():
@@ -105,19 +121,18 @@ def court_add():
         return "exception"
     return "success"
 
-@app.route("/pixlet/list", methods=["GET"])
-def pixlet_list():
-    query = client.query(kind="pixlet")
+@app.route("/tidbyt/list", methods=["GET"])
+def tidbyt_list():
+    query = client.query(kind="tidbyt")
     results = query.fetch()
-    results = [r["name"] for r in results]
-    return str(results)
+    return json.dumps(list(results))
 
-@app.route("/pixlet/add", methods=["POST"])
-def pixlet_add():
+@app.route("/tidbyt/add", methods=["POST"])
+def tidbyt_add():
     """
     JSON Data expected:
     {
-        "pixlet": {
+        "tidbyt": {
             "name": "abc-0000",
             "device_id": "insert-device-id",
             "api_key": "insert-api-key"
@@ -126,17 +141,17 @@ def pixlet_add():
     """
     try:
         data = request.get_json()
-        key = client.key("pixlet")
+        key = client.key("tidbyt", data["tidbyt"]["name"])
         entity = datastore.Entity(key)
         entity.update({
-            "name": data["pixlet"]["name"],
-            "device_id": data["pixlet"]["device_id"],
-            "api_key": data["pixlet"]["api_key"]
+            "name": data["tidbyt"]["name"],
+            "device_id": data["tidbyt"]["device_id"],
+            "api_key": data["tidbyt"]["api_key"]
         })
         client.put(entity)
     except Exception as e:
         print(str(e))
-        return "exception"
+        return "exception: {}".format(str(e))
     return "success"
 
 @app.route("/game/add", methods=["POST"])
@@ -188,7 +203,11 @@ def game_add():
         return "exception"
     return "success"
 
-
+@app.route("/game/list", methods=["GET"])
+def game_list():
+    query = client.query(kind="game")
+    results = query.fetch()
+    return json.dumps(list(results))
 
 
 
