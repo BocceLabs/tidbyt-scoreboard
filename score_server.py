@@ -269,6 +269,7 @@ def game_run_end(game_id):
     except Exception as e:
         print(str(e))
         return "exception"
+
     return "success"
 
 
