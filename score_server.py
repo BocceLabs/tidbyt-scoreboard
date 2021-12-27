@@ -184,7 +184,7 @@ def game_add():
         if "team_b_ball_color_pattern" not in data["game"]:
             data["game"]["team_b_ball_color_pattern"] = "blue"
         if "time_duration" not in data["game"]:
-            data["game"]["time_duration"] = str(isodate.duration.Duration(minutes=20))
+            data["game"]["time_duration"] = str(isodate.isoduration.duration_isoformat(isodate.duration.Duration(minutes=20)))
         if "time_scheduled" not in data["game"]:
             data["game"]["time_scheduled"] = isodate.isodatetime.datetime_isoformat(
                 datetime.now())
@@ -226,10 +226,7 @@ def game_run_start(game_id):
         if not entity["in_progress"]:
             # calculate the end game time
             starts_at = datetime.now()
-            time_duration = entity["time_duration"]
-            duration = isodate.duration.Duration(hours=int(time_duration.split(":")[0]),
-                                                 minutes=int(time_duration.split(":")[1]),
-                                                 seconds=int(time_duration.split(":")[2]))
+            duration = isodate.isoduration.parse_duration(entity["time_duration"])
             ends_at = starts_at + duration
 
             # update the game
@@ -271,6 +268,67 @@ def game_run_end(game_id):
         return "exception"
     return "success"
 
+@app.route("/game/run/pause/<game_id>")
+def game_run_pause(game_id):
+    try:
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+
+        try:
+            paused = entity["paused"]
+        except KeyError:
+            paused = False
+
+        if entity["in_progress"] and not paused:
+            # paused game time is now
+            paused = datetime.now()
+
+            # update the game
+            entity.update({
+                "time_paused": str(isodate.isodatetime.datetime_isoformat(paused)),
+                "paused": True
+            })
+            client.put(entity)
+        else:
+            raise ValueError("Game is not in progress; can't be paused")
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+@app.route("/game/run/resume/<game_id>")
+def game_run_resume(game_id):
+    try:
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+
+        if entity["in_progress"] and entity["paused"]:
+            old_ends_at = isodate.isodatetime.parse_datetime(entity["time_ends_at"])
+            time_paused = isodate.isodatetime.parse_datetime(entity["time_paused"])
+            time_resumed = datetime.now()
+            try:
+                cumulative_time_paused_duration = isodate.isoduration.parse_duration(entity["time_cumulative_time_paused_duration"])
+            except:
+                cumulative_time_paused_duration = isodate.isoduration.parse_duration(isodate.isoduration.duration_isoformat(isodate.duration.Duration(seconds=0)))
+            cumulative_time_paused_duration = cumulative_time_paused_duration + (time_resumed - time_paused)
+            new_ends_at = old_ends_at + cumulative_time_paused_duration
+
+            # update the game
+            entity.update({
+                "time_resumed": str(isodate.isodatetime.datetime_isoformat(time_resumed)),
+                "time_ends_at": str(isodate.isodatetime.datetime_isoformat(new_ends_at)),
+                "time_cumulative_time_paused_duration": str(isodate.isoduration.duration_isoformat(cumulative_time_paused_duration)),
+                "paused": False
+            })
+            client.put(entity)
+        else:
+            raise ValueError("Game is not in progress; can't be paused")
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
 
 @app.route("/game/run/set_score/<game_id>", methods=["POST"])
 def game_run_set_score(game_id):
