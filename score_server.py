@@ -12,6 +12,7 @@ from google.oauth2 import service_account
 from google.cloud import language
 from datetime import datetime
 import isodate
+import uuid
 
 
 # Google Cloud Credentials
@@ -98,7 +99,7 @@ def court_add():
     JSON Data expected:
     {
         "venue": {
-            "name": "Cleo's",
+            "name": "Cleos",
             "court": {
                 "name": "Left",
                 "dimensions": "30x8"
@@ -178,30 +179,36 @@ def game_add():
             data["game"]["venue"] = "unassigned"
         if "court" not in data["game"]:
             data["game"]["court"] = "unassigned"
-        if "datetime" not in data["game"]:
-            data["game"]["datetime"] = isodate.isodatetime.datetime_isoformat(datetime.now())
         if "team_a_ball_color_pattern" not in data["game"]:
             data["game"]["team_a_ball_color_pattern"] = "red"
         if "team_b_ball_color_pattern" not in data["game"]:
             data["game"]["team_b_ball_color_pattern"] = "blue"
+        if "time_duration" not in data["game"]:
+            data["game"]["time_duration"] = str(isodate.duration.Duration(minutes=20))
+        if "time_scheduled" not in data["game"]:
+            data["game"]["time_scheduled"] = isodate.isodatetime.datetime_isoformat(
+                datetime.now())
 
-
-        key = client.key("game")
+        game_id = str(uuid.uuid4())
+        key = client.key("game", game_id)
         entity = datastore.Entity(key)
         entity.update({
+            "game_id": game_id,
             "team_a": data["game"]["team_a"],
             "team_b": data["game"]["team_b"],
             "venue": data["game"]["venue"],
             "court": data["game"]["court"],
-            "datetime": data["game"]["datetime"],
             "team_a_ball_color_pattern": data["game"]["team_a_ball_color_pattern"],
-            "team_b_ball_color_pattern": data["game"]["team_b_ball_color_pattern"]
+            "team_b_ball_color_pattern": data["game"]["team_b_ball_color_pattern"],
+            "time_duration": data["game"]["time_duration"],
+            "time_scheduled": data["game"]["time_scheduled"],
+            "in_progress": False
         })
         client.put(entity)
     except Exception as e:
         print(str(e))
         return "exception"
-    return "success"
+    return "success {}".format(game_id)
 
 @app.route("/game/list", methods=["GET"])
 def game_list():
@@ -209,6 +216,93 @@ def game_list():
     results = query.fetch()
     return json.dumps(list(results))
 
+@app.route("/game/run/start/<game_id>")
+def game_run_start(game_id):
+    try:
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+
+        if not entity["in_progress"]:
+            # calculate the end game time
+            starts_at = datetime.now()
+            time_duration = entity["time_duration"]
+            duration = isodate.duration.Duration(hours=int(time_duration.split(":")[0]),
+                                                 minutes=int(time_duration.split(":")[1]),
+                                                 seconds=int(time_duration.split(":")[2]))
+            ends_at = starts_at + duration
+
+            # update the game
+            entity.update({
+                "time_started_at": str(isodate.isodatetime.datetime_isoformat(starts_at)),
+                "time_ends_at": str(isodate.isodatetime.datetime_isoformat(ends_at)),
+                "in_progress": True
+            })
+            client.put(entity)
+        else:
+            raise ValueError("Game is already started")
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+
+@app.route("/game/run/end/<game_id>")
+def game_run_end(game_id):
+    try:
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+
+        if entity["in_progress"]:
+            # end game time is now
+            ended_at = datetime.now()
+
+            # update the game
+            entity.update({
+                "time_ended_at": str(isodate.isodatetime.datetime_isoformat(ended_at)),
+                "in_progress": False
+            })
+            client.put(entity)
+        else:
+            raise ValueError("Game is already ended")
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
+
+
+@app.route("/game/run/set_score/<game_id>", methods=["POST"])
+def game_run_set_score(game_id):
+    """
+        JSON Data expected:
+        {
+            "team_a_score": ,
+            "team_b_score": ,
+        }
+        """
+    try:
+        # grab the json data
+        data = request.get_json()
+
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+
+        # ensure game is not ended
+        if entity["in_progress"]:
+            # update the game
+            entity.update({
+                "team_a_score": data["team_a_score"],
+                "team_b_score": data["team_b_score"]
+            })
+            client.put(entity)
+        else:
+            raise ValueError("Game is already ended")
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
 
 
 ##### Everything below here is old junk
