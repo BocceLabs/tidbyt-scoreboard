@@ -1,5 +1,5 @@
 # DO NOT CHANGE THE SCORES_URL FROM LINE 2 OF THIS FILE; it must be on LINE 2
-SCORES_URL = 'http://192.168.2.16:8080/lucky_score/546816b2-f480-48a4-962b-cdd56324f33e'
+SCORES_URL = 'https://be-abc-scoreboard-v1-honlt6vzla-uk.a.run.app/lucky_score/546816b2-f480-48a4-962b-cdd56324f33e'
 
 # load starlark packages
 load("render.star", "render")

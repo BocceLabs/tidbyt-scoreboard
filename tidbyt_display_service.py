@@ -12,7 +12,7 @@ client = datastore.Client(
 )
 
 # score server address
-SCORE_SERVER = "http://192.168.2.16:8080"
+SCORE_SERVER = "https://be-abc-scoreboard-v1-honlt6vzla-uk.a.run.app"
 
 # star file
 STAR = "scoreboard_lucky"
@@ -21,7 +21,10 @@ STAR = "scoreboard_lucky"
 while True:
     # request tidbyts
     endpoint = "/tidbyt/list"
-    tidbyts = requests.get(SCORE_SERVER + endpoint).json()
+    headers= {
+        "Content-Type": "application/json"
+    }
+    tidbyts = requests.get(SCORE_SERVER + endpoint, headers=headers).json()
 
     for tidbyt_id, tidbyt_settings in tidbyts.items():
         print("updating {}".format(tidbyt_id))
@@ -30,7 +33,8 @@ while True:
         # opening the file in read mode
         with open(STAR + ".star", "r") as file:
             lines = file.readlines()
-        lines[1] = "SCORES_URL = 'http://192.168.2.16:8080/lucky_score/{}'\n".format(tidbyt_settings["game_id"])
+        lines[1] = "SCORES_URL = '{}/lucky_score/{}'\n".format(SCORE_SERVER,
+                                                               tidbyt_settings["game_id"])
         # opening the file in write mode
         with open(STAR + ".star", "w") as file:
             for line in lines:

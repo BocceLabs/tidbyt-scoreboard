@@ -4,6 +4,10 @@ FROM python:3.7-slim
 # allow statements and log messages to immediately appear in the Stackdriver logs
 ENV PYTHONUNBUFFERED True
 
+# set the port
+ENV PORT 8080
+EXPOSE 8080
+
 # copy local code to the container image
 ENV APP_HOME /app
 WORKDIR $APP_HOME
@@ -29,4 +33,4 @@ RUN pip install --no-cache-dir --requirement requirements.txt
 # to be equal to the cores available.
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run
 # to handle instance scaling.
-CMD exec gunicorn --bind $PORT --workers 1 --threads 8 --timeout 0 main:app
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
