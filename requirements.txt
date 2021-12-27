@@ -4,3 +4,5 @@ opencv-contrib-python
 Flask
 pillow
 isodate
+requests
+gunicorn

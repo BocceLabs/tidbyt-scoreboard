@@ -125,8 +125,11 @@ def court_add():
 @app.route("/tidbyt/list", methods=["GET"])
 def tidbyt_list():
     query = client.query(kind="tidbyt")
-    results = query.fetch()
-    return json.dumps(list(results))
+    query_results = query.fetch()
+    results = {}
+    for r in query_results:
+        results[r.key.id_or_name]=r
+    return json.dumps(results)
 
 @app.route("/tidbyt/add", methods=["POST"])
 def tidbyt_add():
@@ -145,7 +148,6 @@ def tidbyt_add():
         key = client.key("tidbyt", data["tidbyt"]["name"])
         entity = datastore.Entity(key)
         entity.update({
-            "name": data["tidbyt"]["name"],
             "device_id": data["tidbyt"]["device_id"],
             "api_key": data["tidbyt"]["api_key"]
         })
@@ -216,6 +218,13 @@ def game_list():
     results = query.fetch()
     return json.dumps(list(results))
 
+@app.route("/game/list/<game_id>", methods=["GET"])
+def game_list_by_id(game_id):
+    # grab the game
+    key = client.key("game", game_id)
+    entity = client.get(key)
+    return json.dumps(entity)
+
 @app.route("/game/run/start/<game_id>")
 def game_run_start(game_id):
     try:
@@ -233,7 +242,9 @@ def game_run_start(game_id):
             entity.update({
                 "time_started_at": str(isodate.isodatetime.datetime_isoformat(starts_at)),
                 "time_ends_at": str(isodate.isodatetime.datetime_isoformat(ends_at)),
-                "in_progress": True
+                "in_progress": True,
+                "team_a_score": 0,
+                "team_b_score": 0
             })
             client.put(entity)
         else:
@@ -333,12 +344,12 @@ def game_run_resume(game_id):
 @app.route("/game/run/set_score/<game_id>", methods=["POST"])
 def game_run_set_score(game_id):
     """
-        JSON Data expected:
-        {
-            "team_a_score": ,
-            "team_b_score": ,
-        }
-        """
+    JSON Data expected:
+    {
+        "team_a_score": ,
+        "team_b_score": ,
+    }
+    """
     try:
         # grab the json data
         data = request.get_json()
@@ -363,76 +374,99 @@ def game_run_set_score(game_id):
     return "success"
 
 
-##### Everything below here is old junk
+@app.route("/tidbyt/<tidbyt_id>/set_game/<game_id>")
+def game_run_set_scoreboard_display(tidbyt_id, game_id):
+    try:
+        # grab the tidbyt
+        key = client.key("tidbyt", tidbyt_id)
+        entity = client.get(key)
 
+        # update the game
+        entity.update({
+            "game_id": game_id
+        })
+        client.put(entity)
 
+    except Exception as e:
+        print(str(e))
+        return "exception"
+    return "success"
 
-@app.route("/score/<court>")
-def score(court):
-    # grab the time and calculate the new time
-    MM, SS = scores[court]["time"]
-
-    # convert to integer
-    MM = int(MM)
-    SS = int(SS)
-
-    # subtract a second
-    SS -= 1
-
-    # if seconds are negative, update minutes
-    if SS < 0:
-        # if minutes are greater or equal to 1, reset the seconds and
-        # subtract a minute
-        if MM >= 1:
-            SS = 59
-            MM -= 1
-
-        # otherwise there is no time left
-        else:
-            SS = 0
-            MM = 0
-
-
-    scores[court]["time"] = [str(MM).zfill(2), str(SS).zfill(2)]
-    return json.dumps(scores)
-
-@app.route("/lucky_score/<court>")
-def lucky_score(court):
+@app.route("/lucky_score/<game_id>")
+def lucky_score(game_id):
     mode = 'RGBA'
     size = (64, 22)
     color = (00, 00, 00)
     image = Image.new(mode, size, color)
 
-    # team colors
-    team_a_color = (255, 0, 0)
-    team_b_color = (0, 135, 62)
-
-    # team box backgrounds
-    size = (32, 22)
-    team_a_background = Image.new(mode, size, team_a_color)
-    team_b_background = Image.new(mode, size, team_b_color)
-
-    # place the rectangles on the background
-    image.paste(team_a_background, (0, 0))
-    image.paste(team_b_background, (32, 0))
-
     # extract the score
-    score_team_a = scores[court]["score"][0]
-    score_team_b = scores[court]["score"][1]
+    try:
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
 
-    # concatenate the scores
-    scores_str = score_team_a + score_team_b
+        team_a_score = str(entity["team_a_score"]).zfill(2)
+        team_b_score = str(entity["team_b_score"]).zfill(2)
+        team_a_ball_color_pattern = entity["team_a_ball_color_pattern"]
+        team_b_ball_color_pattern = entity["team_b_ball_color_pattern"]
 
-    for i in range(4):
-        foreground = Image.open(os.path.join("luckiest_digits", scores_str[i] + ".png"))
-        image.paste(foreground, (i * 16, 0), foreground)
+        colors = {
+            "red": (255, 0, 0),
+            "blue": (0, 0, 255),
+            "green": (0, 135, 62),
+            "pink": (255,192,203),
+            "yellow": (255, 255, 0),
+            "orange": (255, 128, 0),
+            "black": (0, 0, 0)
+        }
 
+        # team colors
+        team_a_color = colors[team_a_ball_color_pattern]
+        team_b_color = colors[team_b_ball_color_pattern]
 
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    image_str = base64.b64encode(buffered.getvalue())
+        # team box backgrounds
+        size = (32, 22)
+        team_a_background = Image.new(mode, size, team_a_color)
+        team_b_background = Image.new(mode, size, team_b_color)
 
-    return json.dumps({"0": image_str.decode("utf-8")})
+        # place the rectangles on the background
+        image.paste(team_a_background, (0, 0))
+        image.paste(team_b_background, (32, 0))
+
+        # concatenate the scores
+        scores_str = team_a_score + team_b_score
+
+        for i in range(4):
+            foreground = Image.open(os.path.join("luckiest_digits", scores_str[i] + ".png"))
+            image.paste(foreground, (i * 16, 0), foreground)
+
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")
+        image_str = base64.b64encode(buffered.getvalue())
+
+        # calculate the time remaining
+        ends_at = isodate.isodatetime.parse_datetime(entity["time_ends_at"])
+        now = datetime.now()
+        duration_remaining = ends_at - now
+        if str(duration_remaining)[0] == "-":
+            duration_remaining = "0:00:00"
+        else:
+            duration_remaining = str(duration_remaining)[:7]
+
+    except:
+        image = Image.open(os.path.join("oddball_graphics", "obie_red.png"))
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")
+        image_str = base64.b64encode(buffered.getvalue())
+        return json.dumps({
+            "0": image_str.decode("utf-8"),
+            "time_str": "0:00:00"
+        })
+
+    return json.dumps({
+        "0": image_str.decode("utf-8"),
+        "time_str": duration_remaining
+    })
 
 @app.route("/setscore/<court>/<score>", methods=["GET", "POST"])
 def setscore(court, score):
@@ -444,3 +478,6 @@ def setscore(court, score):
 def gettime(court):
     scores[court]["time"] = [2, 0]
     return "success"
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
