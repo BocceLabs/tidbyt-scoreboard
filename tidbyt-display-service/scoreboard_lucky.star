@@ -1,5 +1,5 @@
 # DO NOT CHANGE THE SCORES_URL FROM LINE 2 OF THIS FILE; it must be on LINE 2
-SCORES_URL = 'https://be-abc-scoreboard-v1-honlt6vzla-uk.a.run.app/lucky_score/546816b2-f480-48a4-962b-cdd56324f33e'
+SCORES_URL = 'https://be-abc-scoreboard-v1-honlt6vzla-uk.a.run.app/lucky_score/null'
 
 # load starlark packages
 load("render.star", "render")
@@ -22,14 +22,36 @@ def main(config):
         time_color = "#FFF"
 
     return render.Root(
-        child = render.Row(
+        child = render.Row( # row lays out its children horizontally
             children = [
-                render.Column(
+                render.Column( # column lays out its children vertically
                     expanded = True,
                     main_align="space_around",
                     cross_align="start",
                     children = [
-                        render.Row( # Row lays out its children horizontally
+                        render.Row( # row lays out its children horizontally
+                            children = [
+                                render.Marquee(
+                                    width=32,
+                                    child=render.Text(
+                                        content=response["team_a"],
+                                        font="CG-pixel-3x5-mono"
+                                    ),
+                                    offset_start=31,
+                                    offset_end=31,
+                                ),
+                                render.Marquee(
+                                    width=32,
+                                    child=render.Text(
+                                        content=response["team_b"],
+                                        font="CG-pixel-3x5-mono"
+                                    ),
+                                    offset_start=31,
+                                    offset_end=31,
+                                )
+                            ]
+                        ),
+                        render.Row( # row lays out its children horizontally
                             children = [
                                 render.Padding(
                                     pad=(0, 0, 0, 0),
@@ -44,15 +66,6 @@ def main(config):
                                     font="CG-pixel-3x5-mono",
                                     color=time_color
                                 )
-                                #render.Marquee(
-                                #   width=32,
-                                #    offset_start=5,
-                                #    offset_end=32,
-                                #    child=render.Text(
-                                #        content="Merry Christmas bocce family! - Oddball Sports",
-                                #        font="CG-pixel-3x5-mono"
-                                #    )
-                                #)
                             ]
                         )
                     ]

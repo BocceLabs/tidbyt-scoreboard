@@ -6,7 +6,7 @@ from google.cloud import datastore
 
 
 # connect to the datastore database
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
 client = datastore.Client(
     project="oddballsportstvdev"
 )
@@ -45,5 +45,6 @@ while True:
         os.popen("pixlet push --api-token {} {} {}".format(tidbyt_settings["api_key"],
                                                            tidbyt_settings["device_id"],
                                                            STAR + ".webp")).read()
+
     time.sleep(5)
 

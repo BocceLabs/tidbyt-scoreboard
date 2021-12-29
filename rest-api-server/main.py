@@ -202,8 +202,11 @@ def game_add():
             "court": data["game"]["court"],
             "team_a_ball_color_pattern": data["game"]["team_a_ball_color_pattern"],
             "team_b_ball_color_pattern": data["game"]["team_b_ball_color_pattern"],
+            "team_a_score": 0,
+            "team_b_score": 0,
             "time_duration": data["game"]["time_duration"],
             "time_scheduled": data["game"]["time_scheduled"],
+            "paused": False,
             "in_progress": False
         })
         client.put(entity)
@@ -324,7 +327,7 @@ def game_run_resume(game_id):
             except:
                 cumulative_time_paused_duration = isodate.isoduration.parse_duration(isodate.isoduration.duration_isoformat(isodate.duration.Duration(seconds=0)))
             cumulative_time_paused_duration = cumulative_time_paused_duration + (time_resumed - time_paused)
-            new_ends_at = old_ends_at + cumulative_time_paused_duration
+            new_ends_at = old_ends_at - cumulative_time_paused_duration
 
             # update the game
             entity.update({
@@ -359,7 +362,7 @@ def game_run_set_score(game_id):
         entity = client.get(key)
 
         # ensure game is not ended
-        if entity["in_progress"]:
+        if entity["in_progress"] and not entity["paused"]:
             # update the game
             entity.update({
                 "team_a_score": data["team_a_score"],
@@ -399,7 +402,6 @@ def lucky_score(game_id):
     color = (00, 00, 00)
     image = Image.new(mode, size, color)
 
-    # extract the score
     try:
         # grab the game
         key = client.key("game", game_id)
@@ -445,14 +447,16 @@ def lucky_score(game_id):
         image_str = base64.b64encode(buffered.getvalue())
 
         # calculate the time remaining
-        ends_at = isodate.isodatetime.parse_datetime(entity["time_ends_at"])
-        now = datetime.now()
-        duration_remaining = ends_at - now
-        if str(duration_remaining)[0] == "-":
-            duration_remaining = "0:00:00"
+        if not entity["paused"] and entity["in_progress"]:
+            ends_at = isodate.isodatetime.parse_datetime(entity["time_ends_at"])
+            now = datetime.now()
+            duration_remaining = ends_at - now
+            if str(duration_remaining)[0] == "-":
+                duration_remaining = "0:00:00"
+            else:
+                duration_remaining = str(duration_remaining)[:7]
         else:
-            duration_remaining = str(duration_remaining)[:7]
-
+            duration_remaining = "PAUSED"
     except:
         image = Image.open(os.path.join("oddball_graphics", "obie_red.png"))
         buffered = BytesIO()
@@ -460,12 +464,17 @@ def lucky_score(game_id):
         image_str = base64.b64encode(buffered.getvalue())
         return json.dumps({
             "0": image_str.decode("utf-8"),
-            "time_str": "0:00:00"
+            "time_str": "0:00:00",
+            "team_a": "",
+            "team_b": ""
         })
+
 
     return json.dumps({
         "0": image_str.decode("utf-8"),
-        "time_str": duration_remaining
+        "time_str": duration_remaining,
+        "team_a": entity["team_a"],
+        "team_b": entity["team_b"]
     })
 
 @app.route("/setscore/<court>/<score>", methods=["GET", "POST"])
