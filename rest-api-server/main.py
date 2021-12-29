@@ -327,7 +327,7 @@ def game_run_resume(game_id):
             except:
                 cumulative_time_paused_duration = isodate.isoduration.parse_duration(isodate.isoduration.duration_isoformat(isodate.duration.Duration(seconds=0)))
             cumulative_time_paused_duration = cumulative_time_paused_duration + (time_resumed - time_paused)
-            new_ends_at = old_ends_at - cumulative_time_paused_duration
+            new_ends_at = old_ends_at + (time_resumed - time_paused)
 
             # update the game
             entity.update({
@@ -455,6 +455,8 @@ def lucky_score(game_id):
                 duration_remaining = "0:00:00"
             else:
                 duration_remaining = str(duration_remaining)[:7]
+        elif not entity["paused"] and not entity["in_progress"]:
+            duration_remaining = "NOT STARTED"
         else:
             duration_remaining = "PAUSED"
     except:
