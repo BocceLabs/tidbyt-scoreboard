@@ -2,6 +2,7 @@ google-cloud-language
 google-cloud-datastore
 opencv-contrib-python
 Flask
+flask-cors
 pillow
 isodate
 requests

@@ -1,0 +1,99 @@
+{
+	"game": {
+		"03b62708-23c8-4077-8267-07d0b576e7b6": {
+			"venue": "Cleo's",
+			"court": "Fence",
+			"in_progress": false,
+			"paused": false,
+			"team_a": "Poppers",
+			"team_a_ball_color_pattern": "pink",
+			"team_b": "Daddies",
+			"team_b_ball_color_pattern": "black",
+			"team_a_score": 13,
+			"team_b_score": 9,
+			"time_duration": "PT20M",
+			"time_scheduled": "2021-12-29T18:00:00",
+			"timer_started_at": "2021-12-29T18:05:51",
+			"timer_ends_at": "2021-12-29T18:25:51",
+			"time_ended_at": "2021-12-29T18:32:14",
+			"throwing_pairs": {
+				"team_a": {
+					"Alley": [
+						"David Hoffman",
+						"Jamie Lescher"
+					],
+					"Tables": [
+						"Elizabeth Hoffman",
+						"Chris Todaro"
+					]
+				},
+				"team_b": {
+					"Alley": [
+						"Alex Gara",
+						"Nick"
+					],
+					"Tables": [
+						"Scott Sansbury",
+						"Lydia Gara"
+					]
+				}
+			},
+			"frames": {
+				"0": {
+					"side": "Alley",
+					"pallino_control": "team_b",
+					"team_a_points": 0,
+					"team_b_points": 2
+				},
+				"1": {
+					"side": "Tables",
+					"pallino_control": "team_b",
+					"team_a_points": 1,
+					"team_b_points": 0
+				},
+				"2": {
+					"side": "Alley",
+					"pallino_control": "team_a",
+					"team_a_points": 3,
+					"team_b_points": 0
+				},
+				"3": {
+					"side": "Tables",
+					"pallino_control": "team_a",
+					"team_a_points": 0,
+					"team_b_points": 4
+				},
+				"4": {
+					"side": "Alley",
+					"pallino_control": "team_b",
+					"team_a_points": 2,
+					"team_b_points": 0
+				},
+				"5": {
+					"side": "Tables",
+					"pallino_control": "team_a",
+					"team_a_points": 3,
+					"team_b_points": 0
+				},
+				"6": {
+					"side": "Alley",
+					"pallino_control": "team_a",
+					"team_a_points": 0,
+					"team_b_points": 3
+				},
+				"7": {
+					"side": "Tables",
+					"pallino_control": "team_b",
+					"team_a_points": 2,
+					"team_b_points": 0
+				},
+				"8": {
+					"side": "Alley",
+					"pallino_control": "team_a",
+					"team_a_points": 2,
+					"team_b_points": 0
+				}
+			}
+		}
+	}
+}

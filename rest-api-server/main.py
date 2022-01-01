@@ -2,6 +2,7 @@
 from flask import Flask
 from flask import request
 from flask import json
+from flask_cors import CORS
 from markupsafe import escape
 from PIL import Image, ImageDraw
 import os
@@ -16,15 +17,15 @@ import uuid
 
 
 # Google Cloud Credentials
-# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
-# credentials = service_account.Credentials.from_service_account_file(os.path.join(".", "oddballsportstvdev-e010e1ec7ca7.json"))
-# client = language.LanguageServiceClient(credentials=credentials)
+# NOTE: enable this environment variable for local testing and disable it before deployment
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
 client = datastore.Client(
     project="oddballsportstvdev"
 )
 
 # Flask App
 app = Flask(__name__)
+CORS(app)
 
 def score_list(a, b, poss):
     return [str(a).zfill(2), str(b).zfill(2), int(poss)]
@@ -36,6 +37,11 @@ scores = {
     }
 
 }
+
+# test for CORS headers
+@app.route("/resources")
+def get_resources():
+  return "Hello, cross-origin-world!"
 
 @app.route("/venue/list", methods=["GET"])
 def venue_list():
@@ -101,8 +107,9 @@ def court_add():
         "venue": {
             "name": "Cleos",
             "court": {
-                "name": "Left",
-                "dimensions": "30x8"
+                "name": "Patio",
+                "dimensions": "30x8",
+                "ends": ["Alley", "Tables"]
             }
         }
     }
@@ -115,6 +122,7 @@ def court_add():
         entity.update({
             "name": data["venue"]["court"]["name"],
             "dimensions": data["venue"]["court"]["dimensions"],
+            "ends": data["venue"]["court"]["ends"]
         })
         client.put(entity)
     except Exception as e:
