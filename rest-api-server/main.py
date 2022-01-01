@@ -175,9 +175,31 @@ def game_add():
             "team_b": "Rats",
             "venue": "Cleo's", | optional
             "court": "Fence", | optional
-            "datetime": isodate.isodatetime.datetime_isoformat(datetime.now()), | optional
+            "time_scheduled": isodate.isodatetime.datetime_isoformat(datetime.now()),
             "team_a_ball_color_pattern": "yellow", | optional
             "team_b_ball_color_pattern": "pink" | optional
+            "throwing_pairs": {
+				"team_a": {
+					"Alley": [
+						"David Hoffman",
+						"Jamie Lescher"
+					],
+					"Tables": [
+						"Elizabeth Hoffman",
+						"Chris Todaro"
+					]
+				},
+				"team_b": {
+					"Alley": [
+						"Alex Gara",
+						"Nick"
+					],
+					"Tables": [
+						"Scott Sansbury",
+						"Lydia Gara"
+					]
+				}
+			},
         }
 
     }
@@ -193,8 +215,8 @@ def game_add():
             data["game"]["team_a_ball_color_pattern"] = "red"
         if "team_b_ball_color_pattern" not in data["game"]:
             data["game"]["team_b_ball_color_pattern"] = "blue"
-        if "time_duration" not in data["game"]:
-            data["game"]["time_duration"] = str(isodate.isoduration.duration_isoformat(isodate.duration.Duration(minutes=20)))
+        if "timer_duration" not in data["game"]:
+            data["game"]["timer_duration"] = str(isodate.isoduration.duration_isoformat(isodate.duration.Duration(minutes=20)))
         if "time_scheduled" not in data["game"]:
             data["game"]["time_scheduled"] = isodate.isodatetime.datetime_isoformat(
                 datetime.now())
@@ -212,10 +234,12 @@ def game_add():
             "team_b_ball_color_pattern": data["game"]["team_b_ball_color_pattern"],
             "team_a_score": 0,
             "team_b_score": 0,
-            "time_duration": data["game"]["time_duration"],
+            "timer_duration": data["game"]["timer_duration"],
             "time_scheduled": data["game"]["time_scheduled"],
             "paused": False,
-            "in_progress": False
+            "in_progress": False,
+            "throwing_pairs": data["game"]["throwing_pairs"],
+            "frames": []
         })
         client.put(entity)
     except Exception as e:
@@ -246,16 +270,14 @@ def game_run_start(game_id):
         if not entity["in_progress"]:
             # calculate the end game time
             starts_at = datetime.now()
-            duration = isodate.isoduration.parse_duration(entity["time_duration"])
+            duration = isodate.isoduration.parse_duration(entity["timer_duration"])
             ends_at = starts_at + duration
 
             # update the game
             entity.update({
                 "time_started_at": str(isodate.isodatetime.datetime_isoformat(starts_at)),
-                "time_ends_at": str(isodate.isodatetime.datetime_isoformat(ends_at)),
-                "in_progress": True,
-                "team_a_score": 0,
-                "team_b_score": 0
+                "timer_ends_at": str(isodate.isodatetime.datetime_isoformat(ends_at)),
+                "in_progress": True
             })
             client.put(entity)
         else:
@@ -327,7 +349,7 @@ def game_run_resume(game_id):
         entity = client.get(key)
 
         if entity["in_progress"] and entity["paused"]:
-            old_ends_at = isodate.isodatetime.parse_datetime(entity["time_ends_at"])
+            old_ends_at = isodate.isodatetime.parse_datetime(entity["timer_ends_at"])
             time_paused = isodate.isodatetime.parse_datetime(entity["time_paused"])
             time_resumed = datetime.now()
             try:
@@ -340,7 +362,7 @@ def game_run_resume(game_id):
             # update the game
             entity.update({
                 "time_resumed": str(isodate.isodatetime.datetime_isoformat(time_resumed)),
-                "time_ends_at": str(isodate.isodatetime.datetime_isoformat(new_ends_at)),
+                "timer_ends_at": str(isodate.isodatetime.datetime_isoformat(new_ends_at)),
                 "time_cumulative_time_paused_duration": str(isodate.isoduration.duration_isoformat(cumulative_time_paused_duration)),
                 "paused": False
             })
@@ -357,8 +379,14 @@ def game_run_set_score(game_id):
     """
     JSON Data expected:
     {
-        "team_a_score": ,
-        "team_b_score": ,
+        "team_a_score": 4,
+        "team_b_score": 3,
+        "append_frame": {
+            "side": "Alley",
+            "pallino_control": "team_b",
+            "team_a_points": 0,
+            "team_b_points": 2
+        }
     }
     """
     try:
@@ -369,12 +397,17 @@ def game_run_set_score(game_id):
         key = client.key("game", game_id)
         entity = client.get(key)
 
+        # grab and append the frames
+        frames = entity["frames"]
+        frames.append(data["append_frame"])
+
         # ensure game is not ended
         if entity["in_progress"] and not entity["paused"]:
             # update the game
             entity.update({
                 "team_a_score": data["team_a_score"],
-                "team_b_score": data["team_b_score"]
+                "team_b_score": data["team_b_score"],
+                "frames": frames
             })
             client.put(entity)
         else:
