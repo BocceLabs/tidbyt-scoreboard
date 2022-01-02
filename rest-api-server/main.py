@@ -18,7 +18,7 @@ import uuid
 
 # Google Cloud Credentials
 # NOTE: enable this environment variable for local testing and disable it before deployment
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/drhoffma/oddballsports_git/tidbyt-scoreboard/oddballsportstvdev-e010e1ec7ca7.json"
 client = datastore.Client(
     project="oddballsportstvdev"
 )
@@ -27,27 +27,23 @@ client = datastore.Client(
 app = Flask(__name__)
 CORS(app)
 
-def score_list(a, b, poss):
-    return [str(a).zfill(2), str(b).zfill(2), int(poss)]
-
-scores = {
-    "A": {
-        "score": score_list(0, 0, 0),
-        "time": [20, 00]
-    }
-
-}
-
-# test for CORS headers
-@app.route("/resources")
-def get_resources():
-  return "Hello, cross-origin-world!"
 
 @app.route("/venue/list", methods=["GET"])
 def venue_list():
-    query = client.query(kind="venue")
-    results = query.fetch()
-    return json.dumps(list(results))
+    try:
+        venue_query = client.query(kind="venue")
+        venue_results = venue_query.fetch()
+        venues = {r.key.id_or_name: r for r in venue_results}
+        results = {
+            "status": "success",
+            "venues": venues
+        }
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps(results)
 
 @app.route("/venue/add", methods=["POST"])
 def venue_add():
@@ -72,32 +68,58 @@ def venue_add():
         client.put(entity)
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/court/list", methods=["GET"])
 def court_list():
-    # query for venues
-    venue_query = client.query(kind="venue")
-    venue_results = venue_query.fetch()
-    venue_ids = [r.key.id_or_name for r in venue_results]
+    try:
+        # query for venues
+        venue_query = client.query(kind="venue")
+        venue_results = venue_query.fetch()
+        venue_ids = [r.key.id_or_name for r in venue_results]
 
-    # query for courts asscoiated with venues and build dictionary
-    results = {}
-    for venue_id in venue_ids:
-        query = client.query(kind="court", ancestor=client.key("venue", venue_id))
-        court_results = query.fetch()
-        results[venue_id] = []
-        for court in court_results:
-            results[venue_id].append(court)
+        # query for courts asscoiated with venues and build dictionary
+        courts = {}
+        for venue_id in venue_ids:
+            query = client.query(kind="court", ancestor=client.key("venue", venue_id))
+            court_results = query.fetch()
+            courts[venue_id] = []
+            for court in court_results:
+                courts[venue_id].append(court)
 
+        results = {
+            "status": "success",
+            "courts": courts
+        }
+    except Exception as e:
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
     return json.dumps(results)
 
 @app.route("/court/list/<venue>", methods=["GET"])
 def court_list_per_venue(venue):
-    query = client.query(kind="court", ancestor=client.key("venue", venue))
-    results = query.fetch()
-    return json.dumps(list(results))
+    try:
+        query = client.query(kind="court", ancestor=client.key("venue", venue))
+        courts = query.fetch()
+        results = {
+            "status": "success",
+            "courts": {
+                venue: list(courts)
+            }
+        }
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+
+    return json.dumps(results)
 
 @app.route("/court/add", methods=["POST"])
 def court_add():
@@ -127,16 +149,28 @@ def court_add():
         client.put(entity)
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/tidbyt/list", methods=["GET"])
 def tidbyt_list():
-    query = client.query(kind="tidbyt")
-    query_results = query.fetch()
-    results = {}
-    for r in query_results:
-        results[r.key.id_or_name]=r
+    try:
+        query = client.query(kind="tidbyt")
+        tidbyts = query.fetch()
+        tidbyts = {r.key.id_or_name: r for r in tidbyts}
+        results = {
+            "status": "success",
+            "tidbyts": tidbyts
+        }
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
     return json.dumps(results)
 
 @app.route("/tidbyt/add", methods=["POST"])
@@ -162,8 +196,12 @@ def tidbyt_add():
         client.put(entity)
     except Exception as e:
         print(str(e))
-        return "exception: {}".format(str(e))
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/game/add", methods=["POST"])
 def game_add():
@@ -244,21 +282,47 @@ def game_add():
         client.put(entity)
     except Exception as e:
         print(str(e))
-        return "exception"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
     return "success {}".format(game_id)
 
 @app.route("/game/list", methods=["GET"])
 def game_list():
-    query = client.query(kind="game")
-    results = query.fetch()
-    return json.dumps(list(results))
+    try:
+        query = client.query(kind="game")
+        games = query.fetch()
+        games = {r.key.id_or_name: r for r in games}
+        results = {
+            "status": "success",
+            "games": games
+        }
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+
+    return json.dumps(results)
 
 @app.route("/game/list/<game_id>", methods=["GET"])
 def game_list_by_id(game_id):
-    # grab the game
-    key = client.key("game", game_id)
-    entity = client.get(key)
-    return json.dumps(entity)
+    try:
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+        results = {
+            "status": "success",
+            "games": {
+                game_id: entity
+            }
+        }
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps(results)
 
 @app.route("/game/run/start/<game_id>")
 def game_run_start(game_id):
@@ -284,8 +348,12 @@ def game_run_start(game_id):
             raise ValueError("Game is already started")
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 
 @app.route("/game/run/end/<game_id>")
@@ -309,8 +377,12 @@ def game_run_end(game_id):
             raise ValueError("Game is already ended")
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/game/run/pause/<game_id>")
 def game_run_pause(game_id):
@@ -338,8 +410,12 @@ def game_run_pause(game_id):
             raise ValueError("Game is not in progress; can't be paused")
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/game/run/resume/<game_id>")
 def game_run_resume(game_id):
@@ -371,8 +447,12 @@ def game_run_resume(game_id):
             raise ValueError("Game is not in progress; can't be paused")
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/game/run/set_score/<game_id>", methods=["POST"])
 def game_run_set_score(game_id):
@@ -414,8 +494,12 @@ def game_run_set_score(game_id):
             raise ValueError("Game is already ended")
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 
 @app.route("/tidbyt/<tidbyt_id>/set_game/<game_id>")
@@ -433,8 +517,12 @@ def game_run_set_scoreboard_display(tidbyt_id, game_id):
 
     except Exception as e:
         print(str(e))
-        return "exception"
-    return "success"
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
 
 @app.route("/lucky_score/<game_id>")
 def lucky_score(game_id):
@@ -520,16 +608,6 @@ def lucky_score(game_id):
         "team_b": entity["team_b"]
     })
 
-@app.route("/setscore/<court>/<score>", methods=["GET", "POST"])
-def setscore(court, score):
-    s = score.split(",")
-    scores[court]["score"] = score_list(s[0], s[1], s[2])
-    return "success"
-
-@app.route("/resettime/<court>", methods=["GET", "POST"])
-def gettime(court):
-    scores[court]["time"] = [2, 0]
-    return "success"
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
