@@ -1,7 +1,10 @@
 # imports
 from flask import Flask
 from flask import request
+from flask import abort
+from functools import wraps
 from flask import json
+from flask import jsonify
 from flask_cors import CORS
 from markupsafe import escape
 from PIL import Image, ImageDraw
@@ -27,8 +30,28 @@ client = datastore.Client(
 app = Flask(__name__)
 CORS(app)
 
+# decorator which ensures a valid API key is passed in the headers
+def require_appkey(view_function):
+    @wraps(view_function)
+    # the new, post-decoration function. Note *args and **kwargs here.
+    def decorated_function(*args, **kwargs):
+        # grab the authorization header
+        headers = request.headers
+        auth = headers.get("X-Api-Key")
+
+        # query for api keys
+        apikey_query = client.query(kind="api_key")
+        apikeys = apikey_query.fetch()
+        apikeys = {r.key.id_or_name: r for r in apikeys}
+
+        if auth not in apikeys:
+            abort(401)
+        else:
+            return view_function(*args, **kwargs)
+    return decorated_function
 
 @app.route("/venue/list", methods=["GET"])
+@require_appkey
 def venue_list():
     try:
         venue_query = client.query(kind="venue")
@@ -46,6 +69,7 @@ def venue_list():
     return json.dumps(results)
 
 @app.route("/venue/add", methods=["POST"])
+@require_appkey
 def venue_add():
     """
     JSON Data expected:
@@ -76,6 +100,7 @@ def venue_add():
     })
 
 @app.route("/court/list", methods=["GET"])
+@require_appkey
 def court_list():
     try:
         # query for venues
@@ -103,6 +128,7 @@ def court_list():
     return json.dumps(results)
 
 @app.route("/court/list/<venue>", methods=["GET"])
+@require_appkey
 def court_list_per_venue(venue):
     try:
         query = client.query(kind="court", ancestor=client.key("venue", venue))
@@ -122,6 +148,7 @@ def court_list_per_venue(venue):
     return json.dumps(results)
 
 @app.route("/court/add", methods=["POST"])
+@require_appkey
 def court_add():
     """
     JSON Data expected:
@@ -157,6 +184,7 @@ def court_add():
     })
 
 @app.route("/tidbyt/list", methods=["GET"])
+@require_appkey
 def tidbyt_list():
     try:
         query = client.query(kind="tidbyt")
@@ -174,6 +202,7 @@ def tidbyt_list():
     return json.dumps(results)
 
 @app.route("/tidbyt/add", methods=["POST"])
+@require_appkey
 def tidbyt_add():
     """
     JSON Data expected:
@@ -204,6 +233,7 @@ def tidbyt_add():
     })
 
 @app.route("/game/add", methods=["POST"])
+@require_appkey
 def game_add():
     """
     JSON Data expected:
@@ -288,6 +318,7 @@ def game_add():
     return "success {}".format(game_id)
 
 @app.route("/game/list", methods=["GET"])
+@require_appkey
 def game_list():
     try:
         query = client.query(kind="game")
@@ -306,6 +337,7 @@ def game_list():
     return json.dumps(results)
 
 @app.route("/game/list/<game_id>", methods=["GET"])
+@require_appkey
 def game_list_by_id(game_id):
     try:
         # grab the game
@@ -325,6 +357,7 @@ def game_list_by_id(game_id):
     return json.dumps(results)
 
 @app.route("/game/run/start/<game_id>")
+@require_appkey
 def game_run_start(game_id):
     try:
         # grab the game
@@ -357,6 +390,7 @@ def game_run_start(game_id):
 
 
 @app.route("/game/run/end/<game_id>")
+@require_appkey
 def game_run_end(game_id):
     try:
         # grab the game
@@ -385,6 +419,7 @@ def game_run_end(game_id):
     })
 
 @app.route("/game/run/pause/<game_id>")
+@require_appkey
 def game_run_pause(game_id):
     try:
         # grab the game
@@ -418,6 +453,7 @@ def game_run_pause(game_id):
     })
 
 @app.route("/game/run/resume/<game_id>")
+@require_appkey
 def game_run_resume(game_id):
     try:
         # grab the game
@@ -455,6 +491,7 @@ def game_run_resume(game_id):
     })
 
 @app.route("/game/run/set_score/<game_id>", methods=["POST"])
+@require_appkey
 def game_run_set_score(game_id):
     """
     JSON Data expected:
@@ -503,6 +540,7 @@ def game_run_set_score(game_id):
 
 
 @app.route("/tidbyt/<tidbyt_id>/set_game/<game_id>")
+@require_appkey
 def game_run_set_scoreboard_display(tidbyt_id, game_id):
     try:
         # grab the tidbyt
@@ -525,6 +563,7 @@ def game_run_set_scoreboard_display(tidbyt_id, game_id):
     })
 
 @app.route("/lucky_score/<game_id>")
+@require_appkey
 def lucky_score(game_id):
     mode = 'RGBA'
     size = (64, 22)
