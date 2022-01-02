@@ -22,9 +22,10 @@ while True:
     # request tidbyts
     endpoint = "/tidbyt/list"
     headers= {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Api-Key": os.getenv("ABC_SCOREBOARD_KEY")
     }
-    tidbyts = requests.get(SCORE_SERVER + endpoint, headers=headers).json()
+    tidbyts = requests.get(SCORE_SERVER + endpoint, headers=headers).json()["tidbyts"]
 
     for tidbyt_id, tidbyt_settings in tidbyts.items():
         print("updating {}".format(tidbyt_id))
@@ -35,6 +36,8 @@ while True:
             lines = file.readlines()
         lines[1] = "SCORES_URL = '{}/lucky_score/{}'\n".format(SCORE_SERVER,
                                                                tidbyt_settings["game_id"])
+        lines[3] = "API KEY ='{}'".format(os.getenv("ABC_SCOREBOARD_KEY"))
+
         # opening the file in write mode
         with open(STAR + ".star", "w") as file:
             for line in lines:
