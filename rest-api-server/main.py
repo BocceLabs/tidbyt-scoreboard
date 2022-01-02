@@ -616,7 +616,7 @@ def lucky_score(game_id):
 
         # calculate the time remaining
         if not entity["paused"] and entity["in_progress"]:
-            ends_at = isodate.isodatetime.parse_datetime(entity["time_ends_at"])
+            ends_at = isodate.isodatetime.parse_datetime(entity["timer_ends_at"])
             now = datetime.now()
             duration_remaining = ends_at - now
             if str(duration_remaining)[0] == "-":

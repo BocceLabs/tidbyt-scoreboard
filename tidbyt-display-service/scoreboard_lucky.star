@@ -1,7 +1,9 @@
 # DO NOT CHANGE THE SCORES_URL FROM LINE 2 OF THIS FILE; it must be on LINE 2
-SCORES_URL = 'https://be-abc-scoreboard-v1-honlt6vzla-uk.a.run.app/lucky_score/50a44950-abce-4ecb-98b0-cb03a92d6e75'
+SCORES_URL = ''
 # DO NOT CHANGE THE API KEY FROM LINE 4 OF THIS FILE; it must be on LINE 4
-API KEY ='9cc2cded-93f1-443d-b044-82b4fbe63298'# load starlark packages
+API_KEY = ''
+
+# load starlark packages
 load("render.star", "render")
 load("http.star", "http")
 load("encoding/base64.star", "base64")
@@ -15,7 +17,7 @@ def main(config):
     }
 
     # make the request
-    response = http.get(SCORES_URL)
+    response = http.get(SCORES_URL, headers=headers)
 
     # ensure the status code is valid
     if response.status_code != 200:

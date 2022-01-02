@@ -36,7 +36,7 @@ while True:
             lines = file.readlines()
         lines[1] = "SCORES_URL = '{}/lucky_score/{}'\n".format(SCORE_SERVER,
                                                                tidbyt_settings["game_id"])
-        lines[3] = "API KEY ='{}'".format(os.getenv("ABC_SCOREBOARD_KEY"))
+        lines[3] = "API_KEY = '{}'\n".format(os.getenv("ABC_SCOREBOARD_KEY"))
 
         # opening the file in write mode
         with open(STAR + ".star", "w") as file:
