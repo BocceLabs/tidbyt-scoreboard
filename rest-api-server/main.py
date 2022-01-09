@@ -754,7 +754,13 @@ def user_update(google_id):
         if "badges" in data["user"]:
             raise ValueError("only use 'append_badges' key since badges can only be added")
 
-        # ensure leagues and badges are lists
+        # ensure leagues, roles, and badges are lists
+        if "roles" in data["user"]:
+            if not isinstance(data["user"]["roles"], list):
+                raise ValueError("Roles must be a list")
+        if "leagues" in data["user"]:
+            if not isinstance(data["user"]["leagues"], list):
+                raise ValueError("Leagues must be a list")
         if "append_badges" in data["user"]:
             if not isinstance(data["user"]["append_badges"], list):
                 raise ValueError("'append_badges' must be a list")
