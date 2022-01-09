@@ -779,6 +779,25 @@ def user_update(google_id):
         "status": "success"
     })
 
+@app.route("/user/list", methods=["GET"])
+@require_appkey
+def user_list():
+    try:
+        query = client.query(kind="user")
+        users = query.fetch()
+        users = {r.key.id_or_name: r for r in users}
+        results = {
+            "status": "success",
+            "users": users
+        }
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+
+    return json.dumps(results)
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
