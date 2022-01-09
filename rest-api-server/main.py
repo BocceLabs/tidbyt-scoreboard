@@ -647,6 +647,132 @@ def lucky_score(game_id):
         "team_b": entity["team_b"]
     })
 
+@app.route("/user/add/<google_id>", methods=["POST"])
+@require_appkey
+def user_add(google_id):
+    """
+    JSON Data expected:
+    {
+        "user": {
+            # required
+            "firstname": "Jane",
+            "lastname": "Doe",
+            "email": "jane.doe@yahoo.com",
+            "roles": ["referee", "player"],
+            "active_subscriber": false,
+
+            # optional
+            "nickname": "",
+            "phone": "555-555-5555",
+            "gender": "non-binary",
+            "league": ["abc_chicago"],
+            "instagram": "",
+            "twitter": "",
+            "badges": []
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        user_key = client.key("user", google_id)
+        entity = datastore.Entity(user_key)
+
+        # defaults
+        if "nickname" not in data["user"]:
+            data["user"]["nickname"] = ""
+        if "avatar_base64" not in data["user"]:
+            data["user"]["avatar_base64"] = ""
+        if "phone" not in data["user"]:
+            data["user"]["phone"] = ""
+        if "gender" not in data["user"]:
+            data["user"]["gender"] = "other"
+        if "leagues" not in data["user"]:
+            data["user"]["leagues"] = []
+        if "instagram" not in data["user"]:
+            data["user"]["instagram"] = ""
+        if "twitter" not in data["user"]:
+            data["user"]["twitter"] = ""
+        if "badges" not in data["user"]:
+            data["user"]["badges"] = []
+
+        # ensure leagues and badges are lists
+        if not isinstance(data["user"]["roles"], list):
+            raise ValueError("Roles must be a list")
+        if not isinstance(data["user"]["leagues"], list):
+            raise ValueError("Leagues must be a list")
+        if not isinstance(data["user"]["badges"], list):
+            raise ValueError("Badges must be a list")
+
+
+        entity.update({
+            # required
+            "firstname": data["user"]["firstname"],
+            "lastname": data["user"]["lastname"],
+            "email": data["user"]["email"],
+            "active_subscriber": data["user"]["active_subscriber"],
+            "roles": data["user"]["roles"],
+
+            # optional
+            "nickname": data["user"]["nickname"],
+            "avatar_base64": data["user"]["avatar_base64"],
+            "phone": data["user"]["phone"],
+            "gender": data["user"]["gender"],
+            "leagues": data["user"]["leagues"],
+            "instagram": data["user"]["instagram"],
+            "twitter": data["user"]["twitter"],
+            "badges": data["user"]["badges"],
+        })
+        client.put(entity)
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
+
+
+@app.route("/user/update/<google_id>", methods=["POST"])
+@require_appkey
+def user_update(google_id):
+    """
+    JSON Data expected:
+    {
+        "user": {
+            "key": "value",
+            "append_league": "league",
+            "append_badge": "badge"
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        user_key = client.key("user", google_id)
+        entity = client.get(user_key)
+
+        if "badges" in data["user"]:
+            raise ValueError("only use 'append_badges' key since badges can only be added")
+
+        # ensure leagues and badges are lists
+        if "append_badges" in data["user"]:
+            if not isinstance(data["user"]["append_badges"], list):
+                raise ValueError("'append_badges' must be a list")
+            else:
+                data["user"]["badges"] = entity["badges"] + data["user"]["append_badges"]
+                del data["user"]["append_badges"]
+
+        entity.update(data["user"])
+        client.put(entity)
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
