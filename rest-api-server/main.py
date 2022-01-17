@@ -490,6 +490,36 @@ def game_run_resume(game_id):
         "status": "success"
     })
 
+@app.route("/game/set_value/<game_id>", methods=["POST"])
+@require_appkey
+def game_set_value(game_id):
+    """
+    JSON Data expected:
+    {
+        "team_a_ball_color_pattern": "green",
+    }
+    """
+    try:
+        # grab the json data
+        data = request.get_json()
+
+        # grab the game
+        key = client.key("game", game_id)
+        entity = client.get(key)
+
+        # update the data
+        entity.update(data)
+        client.put(entity)
+
+    except Exception as e:
+        print(str(e))
+        return json.dumps({
+            "status": "exception: {}".format(repr(e))
+        })
+    return json.dumps({
+        "status": "success"
+    })
+
 @app.route("/game/run/set_score/<game_id>", methods=["POST"])
 @require_appkey
 def game_run_set_score(game_id):
