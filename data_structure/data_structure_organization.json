@@ -4,6 +4,7 @@
 				"name": "American Bocce Co. - Chicago",
 				"manager": "dc629b18-8671-444d-a7d1-9742aed6e724",
 				"established": 2014,
+				"sports": ["bocce"],
 				"address_street": "410 N Paulina St",
 				"address_city": "Chicago",
 				"address_state": "IL",

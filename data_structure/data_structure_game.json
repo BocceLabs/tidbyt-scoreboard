@@ -11,6 +11,7 @@
 			"team_b_score": 5,
 			"team_a_color": "pink",
 			"team_b_color": "black",
+			"sport": "bocce",
 			"in_progress": false,
 			"paused": false,
 			"time_duration": "PT20M",
