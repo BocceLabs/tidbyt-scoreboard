@@ -1,0 +1,12 @@
+{
+	"court": {
+		"c8c8d77e-6174-493e-92f0-c4c8232b220a": {
+			"name": "Left",
+			"sponsor": null,
+			"venue": "9be7dc38-b472-4e62-83a1-18e917a122a2",
+			"width_feet": 8,
+			"length_feet": 30,
+			"surface": "astroturf"
+		}
+	}
+}
