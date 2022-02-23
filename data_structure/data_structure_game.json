@@ -3,6 +3,8 @@
 		"03b62708-23c8-4077-8267-07d0b576e7b6": {
 			"venue": "9be7dc38-b472-4e62-83a1-18e917a122a2",
 			"court": "c8c8d77e-6174-493e-92f0-c4c8232b220a",
+			"league": "b1176f6f-b252-495b-b3af-523114c71044",
+			"tournament": null,
 			"team_a": "58295bff-5e28-4e24-80f0-c1aab443ae52",
 			"team_b": "9d0aba69-4a50-4f6d-9fa1-40a8836d3ffd",
 			"team_a_score": null,

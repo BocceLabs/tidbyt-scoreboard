@@ -2,8 +2,7 @@
 	"organization": {
 			"52697c08-04ad-489c-979d-169dac8885c3": {
 				"name": "American Bocce Co. - Chicago",
-				"owner": "ee01ecb7-338d-40e2-926b-66714f904e3b",
-				"league_manager": "dc629b18-8671-444d-a7d1-9742aed6e724",
+				"manager": "dc629b18-8671-444d-a7d1-9742aed6e724",
 				"established": 2014,
 				"address_street": "410 N Paulina St",
 				"address_city": "Chicago",
