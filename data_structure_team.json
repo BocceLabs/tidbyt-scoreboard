@@ -1,0 +1,33 @@
+{
+	"team": {
+		"58295bff-5e28-4e24-80f0-c1aab443ae52": {
+			"name": "Turbo Team",
+			"organization": "895ead0a-196b-4774-8dcd-9905de829ce3",
+			"league": "e85af894-db60-4e36-a387-17bd8c89a509",
+			"season": "d3c14a82-ec46-48b7-af55-03b304ba138c",
+			"tournament": null,
+			"players": [
+				{
+					"player": "b0b0c613-56a0-48fd-ab43-b4dd6f7d2058",
+					"status": "active"
+				},
+				{
+					"player": "ae8e6687-1082-41b0-ae37-0b6e9e2d55bf",
+					"status": "active"
+				},
+				{
+					"player": "60244213-1a4d-48a3-8204-c143f33eb243",
+					"status": "active"
+				},
+				{
+					"player": "a17ccc11-2ed8-492f-929e-f66ee81bccc2",
+					"status": "active"
+				},
+				{
+					"player": "11c8d5db-7c09-4940-8be0-3cd6baa22004",
+					"status": "sub"
+				}
+			]
+		}
+	}
+}
